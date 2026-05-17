@@ -1,10 +1,10 @@
 import os
+import asyncio
 import logging
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 import anthropic
 
-import os
 TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
 ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY")
 
@@ -82,6 +82,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         logging.error(f"Error: {e}")
 
 async def challenge(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    import random
     challenges = [
         "🎯 Today's challenge: Tell me about your morning in 3 sentences. GO! ⏱️",
         "🎯 Today's challenge: Describe your favorite food without saying its name. I'll guess! 😄",
@@ -89,7 +90,6 @@ async def challenge(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🎯 Today's challenge: What would you do if you had 1 million dollars? Tell me in English! 🤑",
         "🎯 Today's challenge: Describe your best friend without saying their name. 3 sentences minimum! 🧠"
     ]
-    import random
     await update.message.reply_text(random.choice(challenges))
 
 async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -104,14 +104,17 @@ Or just... write anything in English and I'll help you improve it! 💪
 Remember: mistakes are welcome here 😄"""
     await update.message.reply_text(help_text)
 
-def main():
+async def main():
     app = Application.builder().token(TELEGRAM_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("challenge", challenge))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     print("🚀 Hamzeh AI Tutor is running!")
-    app.run_polling()
+    await app.initialize()
+    await app.start()
+    await app.updater.start_polling()
+    await asyncio.Event().wait()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
